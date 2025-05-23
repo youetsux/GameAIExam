@@ -52,6 +52,7 @@
     </ClCompile>
     <ClCompile Include="Stage.cpp" />
     <ClCompile Include="Player.cpp" />
+    <ClCompile Include="Enemy.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Screen.h" />
@@ -116,6 +117,7 @@
     <ClInclude Include="global.h" />
     <ClInclude Include="Stage.h" />
     <ClInclude Include="Player.h" />
+    <ClInclude Include="Enemy.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Library">
