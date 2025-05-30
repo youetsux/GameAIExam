@@ -1,7 +1,6 @@
 #include "Stage.h"
 
-const int STAGE_WIDTH = 39;
-const int STAGE_HEIGHT = 21;
+
 
 Stage::Stage()
 {

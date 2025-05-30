@@ -5,11 +5,15 @@
 class Player :
     public GameObject
 {
-	Point pos_;
 public:
 	Player();
 	~Player();
 	void Update() override;
 	void Draw() override;
+	Point GetPlayerPos() { return pos_; }
+private:
+	int hImage_;//‰æ‘œID
+	Point pos_;
+	DIR dir_;//ˆÚ“®•ûŒü
 };
 

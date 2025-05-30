@@ -1,25 +1,27 @@
 #include "App.h"
 #include "SceneManager.h"
 #include "ObjectManager.h"
-//#include "Time.h"
+#include "Time.h"
 #include <DxLib.h>
+#include "../Input.h"
 
 void AppInit()
 {
 	ObjectManager::Init();
 	SceneManager::Init();
-//	Time::Init();
+	Time::Init();
 }
 
 void AppUpdate()
 {
+	Input::KeyStateUpdate();
 	SceneManager::Update();
 	ObjectManager::Update();
 }
 
 void AppDraw()
 {
-//	Time::Refresh();
+	Time::Refresh();
 	SceneManager::Draw();
 	ObjectManager::Draw();
 }

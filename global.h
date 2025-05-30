@@ -31,4 +31,6 @@ enum DIR
 	MAX_DIR
 };
 
+const int STAGE_WIDTH = 39;
+const int STAGE_HEIGHT = 21;
 const int CHA_SIZE = 32; //キャラのサイズ 32*32
