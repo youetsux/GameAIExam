@@ -73,3 +73,13 @@ void Player::Draw()
 	}
 	animTimer = animTimer - Time::DeltaTime();
 }
+// PlayerとEnemyのマンハッタン距離を計算するメソッド
+//int CalculateManhattanDistance() {
+//	Point playerPos = player_->GetPlayerPos();
+//	Point enemyPos = enemy_->GetEnemyPos();
+//
+//	// マンハッタン距離の計算: |x1 - x2| + |y1 - y2|
+//	int distance = std::abs(playerPos.x - enemyPos.x) +
+//		std::abs(playerPos.y - enemyPos.y);
+//	return distance;
+//}
