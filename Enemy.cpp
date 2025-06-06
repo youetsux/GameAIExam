@@ -16,7 +16,14 @@ Enemy::Enemy()
 	: GameObject() 
 {
 	hImage_ = LoadGraph("Assets/panda_R.png");
-	pos_ = ENEMY_START_POS; //32はブロックの位置pos_
+	//pos_ = ENEMY_START_POS; //32はブロックの位置pos_
+	//↑ステージ内のランダム位置にスポーン
+	// 39x21
+	//  幅で見ると　0,39が石のなか　ステージは　1～38
+	//  高で見ると  0,21が石のなか　ステージは  1～20
+	//GetRand(x)は　0～xまでの整数が発生　1～３８，1～２０の乱数を出すには？
+	Point rndNum = { GetRand(STAGE_WIDTH - 2) + 1, GetRand(STAGE_HEIGHT - 2) + 1 };
+	pos_ = {rndNum.x * ENEMY_DRAW_SIZE, rndNum.y * ENEMY_DRAW_SIZE};
 	dir_ = INIT_ENEMY_DIR;
 }
 
@@ -33,11 +40,13 @@ void Enemy::Update()
 	float dt = Time::DeltaTime();
 	dir_timer = dir_timer - dt;
 	prog_timer = prog_timer - dt;
-	if (dir_timer < 0.0f)
-	{
-		dir_ = (DIR)(GetRand(3));
-		dir_timer = 3.0f + dir_timer;
-	}
+	//if (dir_timer < 0.0f)
+	//{
+	//	//dir_ = (DIR)(GetRand(3));
+	//	//TurnLeft();
+	//	TurnBack();
+	//	dir_timer = 3.0f + dir_timer;
+	//}
 
 	Point newPos = pos_;
 	if (prog_timer < 0.0f)
@@ -64,6 +73,11 @@ void Enemy::Update()
 			|| newPos.y < 1 || newPos.y >(STAGE_HEIGHT - 2) * ENEMY_DRAW_SIZE))
 		{
 			pos_ = newPos;
+			
+		}
+		else
+		{
+			TurnLeft();
 		}
 		prog_timer = 0.5f + prog_timer;
 	}
@@ -91,4 +105,67 @@ void Enemy::Draw()
 		animTimer = ANIM_INTERVAL + animTimer;
 	}
 	animTimer = animTimer - Time::DeltaTime();
+}
+
+void Enemy::TurnLeft()
+{
+	switch(dir_)
+	{
+	case   UP:
+		dir_ = DIR::LEFT;
+		break;
+	case DOWN:
+		dir_ = DIR::RIGHT;
+		break;
+	case LEFT:
+		dir_ = DIR::DOWN;
+		break;
+	case RIGHT:
+		dir_ = DIR::UP;
+		break;
+	default:
+		break;
+	}
+}
+
+void Enemy::TurnRight()
+{
+	switch (dir_)
+	{
+	case   UP:
+		dir_ = DIR::RIGHT;
+			break;
+	case DOWN:
+		dir_ = DIR::LEFT;
+			break;
+	case LEFT:
+		dir_ = DIR::UP;
+			break;
+	case RIGHT:
+		dir_ = DIR::DOWN;
+			break;
+	default:
+		break;
+	}
+}
+
+void Enemy::TurnBack()
+{
+	switch (dir_)
+	{
+	case   UP:
+		dir_ = DIR::DOWN;
+			break;
+	case DOWN:
+		dir_ = DIR::UP;
+			break;
+	case LEFT:
+		dir_ = DIR::RIGHT;
+			break;
+	case RIGHT:
+		dir_ = DIR::LEFT;
+			break;
+	default:
+		break;
+	}
 }

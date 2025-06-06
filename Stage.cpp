@@ -21,7 +21,9 @@ void Stage::Draw()
 	{
 		for (int x = 0; x < STAGE_WIDTH; x++)
 		{
-			DrawBox(x * CHA_SIZE, y * CHA_SIZE, (x + 1) * CHA_SIZE, (y + 1) * CHA_SIZE, GetColor(255, 0,0), FALSE);
+			SetDrawBlendMode(DX_BLENDMODE_ALPHA, 50);
+			DrawBox(x * CHA_SIZE, y * CHA_SIZE, (x + 1) * CHA_SIZE, (y + 1) * CHA_SIZE, GetColor(255, 0,0), FALSE, 1);
+			SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 255);
 			if (x == 0 || x == STAGE_WIDTH - 1 || y == 0 || y == STAGE_HEIGHT - 1)
 			{
 				DrawBox(x * CHA_SIZE, y * CHA_SIZE, (x + 1) * CHA_SIZE, (y + 1) * CHA_SIZE, GetColor(182,82,51), TRUE);

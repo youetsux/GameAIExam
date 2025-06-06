@@ -14,5 +14,8 @@ public:
 	~Enemy();
 	void Update() override;
 	void Draw() override;
+	void TurnLeft();
+	void TurnRight();
+	void TurnBack();
 };
 
