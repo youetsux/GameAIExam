@@ -30,4 +30,7 @@ void Stage::Draw()
 			}
 		}
 	}
+	DrawBox(18 * CHA_SIZE, 10 * CHA_SIZE, (18 + 1) * CHA_SIZE, (10 + 1) * CHA_SIZE, GetColor(255, 255, 0), TRUE);
+	DrawBox(18 * CHA_SIZE, 10 * CHA_SIZE, (18 + 1) * CHA_SIZE, (10 + 1) * CHA_SIZE, GetColor(255, 0, 0), FALSE, 2);
+	DrawFormatString(18 * CHA_SIZE+13, 10 * CHA_SIZE+10, GetColor(255, 0, 0), "P");
 }

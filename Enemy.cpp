@@ -10,9 +10,13 @@ namespace
 	const int ENEMY_DRAW_SIZE = 32; //敵の描画サイズ
 	const int animFrame[4]{ 0, 1, 2, 1 };
 	const float ANIM_INTERVAL = 0.2f;
-	const float ENEMY_MOVE_INTERVAL = 0.2f;
+
+	const float ENEMY_MOVE_INTERVAL = 0.2f; //敵の移動間隔
+	const float ENEMY_CHASE_INTERVAL = 0.15f; //敵の追いかける間隔
+
 	const int THRESHOLD_DIST = 10;
 	const float INIT_CHASE_TIME = 3.0; //10s追いかける
+
 }
 
 
@@ -39,6 +43,7 @@ Enemy::~Enemy()
 
 void Enemy::Update()
 {
+	//プレイヤーが、10,15 にいたら、escapeモード
 	switch (state_)
 	{
 	case ESTATE::NORMAL:
@@ -132,6 +137,60 @@ void Enemy::UpdateChase()
 	}
 	else {
 		//マンハッタン距離を減らそう！
+		Player* p = FindGameObject<Player>();
+		Point pPos = p->GetPlayerPos();
+		int xDist = abs(pPos.x - pos_.x);
+		int yDist = abs(pPos.y - pos_.y);
+		if (xDist > yDist) 
+		{
+			if (pPos.x > pos_.x) {
+				dir_ = DIR::RIGHT;
+			}
+			else {
+				dir_ = DIR::LEFT;
+			}
+		}
+		else if (xDist < yDist)
+		{
+			if (pPos.y > pos_.y) {
+				dir_ = DIR::DOWN;
+			}
+			else {
+				dir_ = DIR::UP;
+			}
+		}
+
+		static float prog_timer = ENEMY_CHASE_INTERVAL;
+		Point newPos = pos_;
+		if (prog_timer < 0.0f)
+		{
+			switch (dir_)
+			{
+			case UP:
+				newPos.y -= ENEMY_DRAW_SIZE;
+				break;
+			case DOWN:
+				newPos.y += ENEMY_DRAW_SIZE;
+				break;
+			case LEFT:
+				newPos.x -= ENEMY_DRAW_SIZE;
+				break;
+			case RIGHT:
+				newPos.x += ENEMY_DRAW_SIZE;
+				break;
+			default:
+				break;
+			}
+			//移動先がステージの外に出ないようにする
+			if (!(newPos.x < 1 || newPos.x >(STAGE_WIDTH - 2) * ENEMY_DRAW_SIZE
+				|| newPos.y < 1 || newPos.y >(STAGE_HEIGHT - 2) * ENEMY_DRAW_SIZE))
+			{
+				pos_ = newPos;
+
+			}
+			prog_timer = ENEMY_CHASE_INTERVAL + prog_timer;
+		}
+		prog_timer = prog_timer - dt;
 		chaseTime_ = chaseTime_ - dt;
 	}
 }
