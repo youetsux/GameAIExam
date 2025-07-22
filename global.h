@@ -23,7 +23,7 @@ struct Rect {
 
 enum DIR
 {
-	UP,
+	UP = 0,
 	DOWN,
 	LEFT,
 	RIGHT,
