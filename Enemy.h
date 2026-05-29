@@ -42,6 +42,7 @@ private:
 	void DrawFieldOfViewArc_PureDxLib(float fovAngleDeg = 90.0f,int   viewDistanceTiles = 5, int   numSegments = 25) const;
 	//見える範囲のピックアップ→これを使って、視界のタイルを塗る
 	std::vector<Point> GetViewTiles(float angle, int dist);
+	std::vector<Point> viewTiles_; // キャッシュ済み視界タイル
 
 };
 

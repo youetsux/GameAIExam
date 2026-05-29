@@ -115,17 +115,7 @@ void Enemy::UpdateNormal()
 		}
 
 		Player* p = FindGameObject<Player>();
-		//Point pPos = p->GetPlayerPos();
-		//プレイヤーとのマンハッタン距離がTHRESHOLD_DISTより小さくなったら
-		//CHASE
-			// マンハッタン距離の計算: |x1 - x2| + |y1 - y2|
-		//int distance = (std::abs(pPos.x - pos_.x) +
-		//	std::abs(pPos.y - pos_.y))/ ENEMY_DRAW_SIZE;
-		//if (distance <= THRESHOLD_DIST) {
-		//	state_ = ESTATE::CHASE;
-		//	printfDx("STATE CHANGE->CHASE!\n");
-		//}
-		//センサーがあったら
+		viewTiles_ = GetViewTiles(VIEW_ANGLE, VIEW_DIST);
 		if (CanSeePlayer(p))
 		{
 			state_ = ESTATE::CHASE;
@@ -355,6 +345,12 @@ void Enemy::DrawFieldOfViewArc_PureDxLib(
 	DrawLine(int(cx), int(cy), int(xB), int(yB), lineColor);
 }
 
+/// <summary>
+/// 指定された角度と距離に基づいて、敵の視界内のタイルを計算します。
+/// </summary>
+/// <param name="angle">視野角(度単位)。</param>
+/// <param name="dist">視界の最大距離(タイル単位)。</param>
+/// <returns>視界内のタイル座標のベクター。</returns>
 std::vector<Point> Enemy::GetViewTiles(float angle, int dist)
 {
 	std::vector<Point> viewTiles;//視界のタイルを格納するベクター
@@ -410,19 +406,13 @@ void Enemy::Draw()
 		               iRect[dir_].x, iRect[dir_].y, iRect[dir_].w, iRect[dir_].h, hImage_, TRUE);
 	
 	//視界の描画
-	Point fdir[4] = { {0,-1},{0,1},{-1,0},{1,0} };
 	SetDrawBlendMode(DX_BLENDMODE_ALPHA, 128);
-
-	//DrawFieldOfViewArc_PureDxLib(90, 3, 10);
-	auto&& viewTiles = GetViewTiles(VIEW_ANGLE, VIEW_DIST);
-	for (int i = 0; i < viewTiles.size(); i++)
+	for (auto& tile : viewTiles_)
 	{
-		Point tile = viewTiles[i];
-		int x = tile.x * CHA_SIZE;
-		int y = tile.y * CHA_SIZE;
-		DrawBox(x, y, x + CHA_SIZE, y + CHA_SIZE, GetColor(0, 255, 0), TRUE);
+		DrawBox(tile.x * CHA_SIZE, tile.y * CHA_SIZE,
+			(tile.x + 1) * CHA_SIZE, (tile.y + 1) * CHA_SIZE,
+			GetColor(0, 255, 0), TRUE);
 	}
-	//塗る
 	SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
 	
 	if (animTimer < 0) {
@@ -517,15 +507,10 @@ bool Enemy::CanSeePlayer(Player* p)
 	//		return true;
 	//}
 
-	auto&& viewTiles = GetViewTiles(VIEW_ANGLE, VIEW_DIST);
-	for (int i = 0; i < viewTiles.size(); i++)
+	Point pTile = { p->GetPlayerPos().x / ENEMY_DRAW_SIZE, p->GetPlayerPos().y / ENEMY_DRAW_SIZE };
+	for (auto& tile : viewTiles_)
 	{
-		Point tile = viewTiles[i];
-		if (tile.x == p->GetPlayerPos().x / ENEMY_DRAW_SIZE &&
-			tile.y == p->GetPlayerPos().y / ENEMY_DRAW_SIZE)
-		{
-			return true;
-		}
+		if (tile.x == pTile.x && tile.y == pTile.y) return true;
 	}
 
 	return false;
