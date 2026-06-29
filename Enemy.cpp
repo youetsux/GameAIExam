@@ -6,18 +6,18 @@
 
 namespace
 {
-	const int ENEMY_SIZE = 48; //敵のサイズ 32*32
-	const Point ENEMY_START_POS = { 20 * ENEMY_SIZE, 10 * ENEMY_SIZE }; //敵の初期位置
+	const int ENEMY_SIZE = 48; 
+	const Point ENEMY_START_POS = { 20 * ENEMY_SIZE, 10 * ENEMY_SIZE }; //?G???????u
 	const DIR INIT_ENEMY_DIR = { LEFT };
-	const int ENEMY_DRAW_SIZE = 32; //敵の描画サイズ
+	const int ENEMY_DRAW_SIZE = 32; //?G??`??T?C?Y
 	const int animFrame[4]{ 0, 1, 2, 1 };
 	const float ANIM_INTERVAL = 0.2f;
 
-	const float ENEMY_MOVE_INTERVAL = 0.2f; //敵の移動間隔
-	const float ENEMY_CHASE_INTERVAL = 0.15f; //敵の追いかける間隔
+	const float ENEMY_MOVE_INTERVAL = 0.2f; 
+	const float ENEMY_CHASE_INTERVAL = 0.15f;
 
 	const int THRESHOLD_DIST = 5;
-	const float INIT_CHASE_TIME = 5.0; //10s追いかける
+	const float INIT_CHASE_TIME = 5.0; 
 
 	const int VIEW_DIST = 5;
 	const float VIEW_ANGLE = 45.0f;
@@ -28,12 +28,7 @@ Enemy::Enemy()
 	: GameObject() 
 {
 	hImage_ = LoadGraph("Assets/panda_R.png");
-	//pos_ = ENEMY_START_POS; //32はブロックの位置pos_
-	//↑ステージ内のランダム位置にスポーン
-	// 39x21
-	//  幅で見ると　0,39が石のなか　ステージは　1～38
-	//  高で見ると  0,21が石のなか　ステージは  1～20
-	//GetRand(x)は　0～xまでの整数が発生　1～３８，1～２０の乱数を出すには？
+
 	Point rndNum = { GetRand(STAGE_WIDTH - 2) + 1, GetRand(STAGE_HEIGHT - 2) + 1 };
 	pos_ = {rndNum.x * ENEMY_DRAW_SIZE, rndNum.y * ENEMY_DRAW_SIZE};
 	dir_ = INIT_ENEMY_DIR;
@@ -47,12 +42,8 @@ Enemy::~Enemy()
 
 void Enemy::Update()
 {
-	//プレイヤーが、10,15 にいたら、escapeモード
 	switch (state_)
 	{
-	case ESTATE::NORMAL:
-		UpdateNormal();
-		break;
 	case ESTATE::CHASE:
 		UpdateChase();
 		break;
@@ -65,67 +56,66 @@ void Enemy::Update()
 
 }
 
-void Enemy::UpdateNormal()
-{
-	//GetRand(数値)
-//3秒に1回向きをランダムに変える
-//static float dir_timer = 3.0f;
-	static float prog_timer = ENEMY_MOVE_INTERVAL;
-	float dt = Time::DeltaTime();
-	//dir_timer = dir_timer - dt;
-	prog_timer = prog_timer - dt;
-	//if (dir_timer < 0.0f)
-	//{
-	//	//dir_ = (DIR)(GetRand(3));
-	//	//TurnLeft();
-	//	TurnBack();
-	//	dir_timer = 3.0f + dir_timer;
-	//}
-
-	Point newPos = pos_;
-	if (prog_timer < 0.0f)
-	{
-		switch (dir_)
-		{
-		case UP:
-			newPos.y -= ENEMY_DRAW_SIZE;
-			break;
-		case DOWN:
-			newPos.y += ENEMY_DRAW_SIZE;
-			break;
-		case LEFT:
-			newPos.x -= ENEMY_DRAW_SIZE;
-			break;
-		case RIGHT:
-			newPos.x += ENEMY_DRAW_SIZE;
-			break;
-		default:
-			break;
-		}
-		//移動先がステージの外に出ないようにする
-		if (!(newPos.x < 1 || newPos.x >(STAGE_WIDTH - 2) * ENEMY_DRAW_SIZE
-			|| newPos.y < 1 || newPos.y >(STAGE_HEIGHT - 2) * ENEMY_DRAW_SIZE))
-		{
-			pos_ = newPos;
-
-		}
-		else
-		{
-			TurnLeft();
-		}
-
-		Player* p = FindGameObject<Player>();
-		viewTiles_ = GetViewTiles(VIEW_ANGLE, VIEW_DIST);
-		if (CanSeePlayer(p))
-		{
-			state_ = ESTATE::CHASE;
-			printfDx("STATE CHANGE->CHASE!\n");
-		}
-
-
-		prog_timer = ENEMY_MOVE_INTERVAL + prog_timer;
-	}
-}
+//void Enemy::UpdateNormal()
+//{
+//
+////static float dir_timer = 3.0f;
+//	static float prog_timer = ENEMY_MOVE_INTERVAL;
+//	float dt = Time::DeltaTime();
+//	//dir_timer = dir_timer - dt;
+//	prog_timer = prog_timer - dt;
+//	//if (dir_timer < 0.0f)
+//	//{
+//	//	//dir_ = (DIR)(GetRand(3));
+//	//	//TurnLeft();
+//	//	TurnBack();
+//	//	dir_timer = 3.0f + dir_timer;
+//	//}
+//
+//	Point newPos = pos_;
+//	if (prog_timer < 0.0f)
+//	{
+//		switch (dir_)
+//		{
+//		case UP:
+//			newPos.y -= ENEMY_DRAW_SIZE;
+//			break;
+//		case DOWN:
+//			newPos.y += ENEMY_DRAW_SIZE;
+//			break;
+//		case LEFT:
+//			newPos.x -= ENEMY_DRAW_SIZE;
+//			break;
+//		case RIGHT:
+//			newPos.x += ENEMY_DRAW_SIZE;
+//			break;
+//		default:
+//			break;
+//		}
+//
+//		if (!(newPos.x < 1 || newPos.x >(STAGE_WIDTH - 2) * ENEMY_DRAW_SIZE
+//			|| newPos.y < 1 || newPos.y >(STAGE_HEIGHT - 2) * ENEMY_DRAW_SIZE))
+//		{
+//			pos_ = newPos;
+//
+//		}
+//		else
+//		{
+//			TurnLeft();
+//		}
+//
+//		Player* p = FindGameObject<Player>();
+//		viewTiles_ = GetViewTiles(VIEW_ANGLE, VIEW_DIST);
+//		if (CanSeePlayer(p))
+//		{
+//			state_ = ESTATE::CHASE;
+//			printfDx("STATE CHANGE->CHASE!\n");
+//		}
+//
+//
+//		prog_timer = ENEMY_MOVE_INTERVAL + prog_timer;
+//	}
+//}
 
 void Enemy::UpdateChase()
 {
@@ -141,7 +131,7 @@ void Enemy::UpdateChase()
 		return;
 	}
 
-	//10秒おいかけてNORMALに戻る
+
 	float dt = Time::DeltaTime();
 	if (chaseTime_ < 0)
 	{
@@ -150,7 +140,7 @@ void Enemy::UpdateChase()
 		printfDx("STATE CHANGE->NORMAL!\n");
 	}
 	else {
-		//マンハッタン距離を減らそう！
+
 
 		int xDist = abs(pPos.x - pos_.x);
 		int yDist = abs(pPos.y - pos_.y);
@@ -194,7 +184,7 @@ void Enemy::UpdateChase()
 			default:
 				break;
 			}
-			//移動先がステージの外に出ないようにする
+
 			if (!(newPos.x < 1 || newPos.x >(STAGE_WIDTH - 2) * ENEMY_DRAW_SIZE
 				|| newPos.y < 1 || newPos.y >(STAGE_HEIGHT - 2) * ENEMY_DRAW_SIZE))
 			{
@@ -265,7 +255,7 @@ void Enemy::UpdateEscape()
 		default:
 			break;
 		}
-		//移動先がステージの外に出ないようにする
+		//???????X?e?[?W??O??o??????????
 		if (!(newPos.x < 1 || newPos.x >(STAGE_WIDTH - 2) * ENEMY_DRAW_SIZE
 			|| newPos.y < 1 || newPos.y >(STAGE_HEIGHT - 2) * ENEMY_DRAW_SIZE))
 		{
@@ -282,14 +272,14 @@ void Enemy::DrawFieldOfViewArc_PureDxLib(
 	int   viewDistanceTiles,
 	int   numSegments
 ) const {
-	// 1) 半径をピクセルに変換
+	// 1) ???a??s?N?Z??????
 	float radius = viewDistanceTiles * CHA_SIZE;
 
-	// 2) 中心座標（敵の中心）
+	// 2) ???S???W?i?G????S?j
 	float cx = pos_.x + CHA_SIZE * 0.5f;
 	float cy = pos_.y + CHA_SIZE * 0.5f;
 
-	// 3) 向き → ベース角度（度→ラジアン）
+	// 3) ???? ?? ?x?[?X?p?x?i?x?????W?A???j
 	float baseDeg = 0.0f;
 	switch (dir_) {
 	case DIR::RIGHT: baseDeg = 0.0f; break;
@@ -301,7 +291,7 @@ void Enemy::DrawFieldOfViewArc_PureDxLib(
 	float startRad = (baseDeg * (3.14159f / 180.0f)) - halfRad;
 	float endRad = (baseDeg * (3.14159f / 180.0f)) + halfRad;
 
-	// 4) 塗りつぶし
+	// 4) ?h?????
 	SetDrawBlendMode(DX_BLENDMODE_ALPHA, 96);
 	for (int i = 0; i < numSegments; ++i) {
 		float t0 = i / float(numSegments);
@@ -324,7 +314,7 @@ void Enemy::DrawFieldOfViewArc_PureDxLib(
 	}
 	SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
 
-	// 5) 輪郭線
+	// 5) ??s??
 	const int lineColor = GetColor(255, 255, 0);
 	float prevX = cx + cosf(startRad) * radius;
 	float prevY = cy + sinf(startRad) * radius;
@@ -336,7 +326,7 @@ void Enemy::DrawFieldOfViewArc_PureDxLib(
 		DrawLine(int(prevX), int(prevY), int(nx), int(ny), lineColor);
 		prevX = nx; prevY = ny;
 	}
-	// 両端から中心への線
+	// ???[?????S????
 	float xA = cx + cosf(startRad) * radius;
 	float yA = cy + sinf(startRad) * radius;
 	float xB = cx + cosf(endRad) * radius;
@@ -346,25 +336,25 @@ void Enemy::DrawFieldOfViewArc_PureDxLib(
 }
 
 /// <summary>
-/// 指定された角度と距離に基づいて、敵の視界内のタイルを計算します。
+/// ?w?????p?x????????????A?G????E???^?C????v?Z??????B
 /// </summary>
-/// <param name="angle">視野角(度単位)。</param>
-/// <param name="dist">視界の最大距離(タイル単位)。</param>
-/// <returns>視界内のタイル座標のベクター。</returns>
+/// <param name="angle">????p(?x?P??)?B</param>
+/// <param name="dist">???E???????(?^?C???P??)?B</param>
+/// <returns>???E???^?C?????W??x?N?^?[?B</returns>
 std::vector<Point> Enemy::GetViewTiles(float angle, int dist)
 {
-	std::vector<Point> viewTiles;//視界のタイルを格納するベクター
+	std::vector<Point> viewTiles;//???E??^?C????i?[????x?N?^?[
 	Point dVec[4] = { {0, -1}, {0, 1}, {-1, 0}, {1, 0} };
 	Point pPos = { pos_.x / ENEMY_DRAW_SIZE, pos_.y / ENEMY_DRAW_SIZE };
 
-	//float rad = angle * (3.14159f / 180.0f); //度をラジアンに変換
+	//float rad = angle * (3.14159f / 180.0f); //?x????W?A??????
 	float rad =  DirectX::XMConvertToRadians(angle);
 
 	for (int dy = -dist; dy <= dist; dy++){
 		for (int dx = -dist; dx <= dist; dx++){
-			if (dx == 0 && dy == 0) continue; //自分は除外
-			//距離チェック
-			if (sqrt(dx * dx + dy * dy) > dist) continue; //距離がdistより大きいなら除外
+			if (dx == 0 && dy == 0) continue; //????????O
+			//?????`?F?b?N
+			if (sqrt(dx * dx + dy * dy) > dist) continue; //??????dist??????????O
 			Point face = dVec[dir_];
 			DirectX::XMVECTOR faceVec = DirectX::XMVectorSet(face.x, face.y, 0.0f, 0.0f);
 			DirectX::XMVECTOR dirVec = DirectX::XMVectorSet(dx, dy, 0.0f, 0.0f);
@@ -372,14 +362,14 @@ std::vector<Point> Enemy::GetViewTiles(float angle, int dist)
 			dirVec = DirectX::XMVector2Normalize(dirVec);
 			//DirectX::XMVector2Dot(faceVec, dirVec);
 			float dotProduct = DirectX::XMVectorGetX(DirectX::XMVector2Dot(faceVec, dirVec));
-			//角度チェック
-			if (dotProduct < cosf(rad)) continue; //角度がradより小さいなら除外
-			//視界のタイルを追加
+			//?p?x?`?F?b?N
+			if (dotProduct < cosf(rad)) continue; //?p?x??rad???????????O
+			//???E??^?C??????
 			Point viewTile = { pPos.x + dx, pPos.y + dy };
-			//ステージの外に出ないようにする
+			//?X?e?[?W??O??o??????????
 			if (viewTile.x < 0 || viewTile.x >= STAGE_WIDTH ||
 				viewTile.y < 0 || viewTile.y >= STAGE_HEIGHT) continue;
-			//タイルを追加	
+			//?^?C??????	
 			viewTiles.push_back(viewTile);
 		}
 	}
@@ -405,7 +395,7 @@ void Enemy::Draw()
 	DrawRectExtendGraph(pos_.x, pos_.y,pos_.x + ENEMY_DRAW_SIZE, pos_.y + ENEMY_DRAW_SIZE,
 		               iRect[dir_].x, iRect[dir_].y, iRect[dir_].w, iRect[dir_].h, hImage_, TRUE);
 	
-	//視界の描画
+	//???E??`??
 	SetDrawBlendMode(DX_BLENDMODE_ALPHA, 128);
 	for (auto& tile : viewTiles_)
 	{
@@ -491,9 +481,9 @@ void Enemy::TurnBack()
 
 bool Enemy::CanSeePlayer(Player* p)
 {
-	//dir_　パンダの向き
-	//前方5マスを視界として、緑か青の半透明で塗る！
-	//VIEW_DIST = 5に設定したよね
+	//dir_?@?p???_?????
+	//?O??5?}?X????E?????A?????????????h??I
+	//VIEW_DIST = 5?????????
 	//Point playerP = p->GetPlayerPos();
 	//playerP = { playerP.x / CHA_SIZE, playerP.y / CHA_SIZE };
 	//Point pPos = { pos_.x / CHA_SIZE, pos_.y / CHA_SIZE };
