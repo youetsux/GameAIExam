@@ -36,13 +36,13 @@ private:
 	Point pos_;
 	DIR dir_;
 	ESTATE state_;
-	float chaseTime_;
-	void UpdateChase();
+	float stateTimer_;
+	float moveTimer_;
 	void UpdatePatrol();
+	void UpdateChase();
 	void UpdateAttack();
-	void UpdateEscape();
-
-	void DrawFieldOfViewArc_PureDxLib(float fovAngleDeg = 90.0f,int   viewDistanceTiles = 5, int   numSegments = 25) const;
+	void UpdateSearch();
+	bool MoveOneStep();
 	std::vector<Point> GetViewTiles(float angle, int dist);
 	std::vector<Point> viewTiles_;
 

@@ -6,34 +6,34 @@
 
 namespace
 {
-	const int ENEMY_SIZE = 48; 
-	const Point ENEMY_START_POS = { 20 * ENEMY_SIZE, 10 * ENEMY_SIZE }; //?G???????u
+	const int ENEMY_SIZE = 48;
 	const DIR INIT_ENEMY_DIR = { LEFT };
-	const int ENEMY_DRAW_SIZE = 32; //?G??`??T?C?Y
+	const int ENEMY_DRAW_SIZE = 32;
 	const int animFrame[4]{ 0, 1, 2, 1 };
 	const float ANIM_INTERVAL = 0.2f;
 
-	const float ENEMY_MOVE_INTERVAL = 0.2f; 
+	const float ENEMY_MOVE_INTERVAL = 0.2f;
 	const float ENEMY_CHASE_INTERVAL = 0.15f;
-
-	const int THRESHOLD_DIST = 5;
-	const float INIT_CHASE_TIME = 5.0; 
 
 	const int VIEW_DIST = 5;
 	const float VIEW_ANGLE = 45.0f;
+
+	const int ATTACK_DIST = 1;        // 攻撃可能マンハッタン距離（タイル）
+	const float SEARCH_TIME = 10.0f;   // 探索タイマー（秒）
 }
 
 
 Enemy::Enemy()
-	: GameObject() 
+	: GameObject()
 {
 	hImage_ = LoadGraph("Assets/panda_R.png");
-
-	Point rndNum = { GetRand(STAGE_WIDTH - 2) + 1, GetRand(STAGE_HEIGHT - 2) + 1 };
-	pos_ = {rndNum.x * ENEMY_DRAW_SIZE, rndNum.y * ENEMY_DRAW_SIZE};
+	// 外周の上辺からランダムにスポーン
+	int startX = GetRand(STAGE_WIDTH - 3) + 1;
+	pos_ = { startX * ENEMY_DRAW_SIZE, 1 * ENEMY_DRAW_SIZE };
 	dir_ = INIT_ENEMY_DIR;
-	state_ = ESTATE::NORMAL;
-	chaseTime_ = INIT_CHASE_TIME;
+	state_ = ESTATE::PATROL;
+	stateTimer_ = 0.0f;
+	moveTimer_ = 0.0f;
 }
 
 Enemy::~Enemy()
@@ -42,334 +42,161 @@ Enemy::~Enemy()
 
 void Enemy::Update()
 {
+	// 視界タイルを毎フレーム更新
+	viewTiles_ = GetViewTiles(VIEW_ANGLE, VIEW_DIST);
+
 	switch (state_)
 	{
-	case ESTATE::CHASE:
-		UpdateChase();
-		break;
-	case ESTATE::ESCAPE:
-		UpdateEscape();
-		break;
-	default:
+	case ESTATE::PATROL: UpdatePatrol(); break;
+	case ESTATE::CHASE:  UpdateChase();  break;
+	case ESTATE::ATTACK: UpdateAttack(); break;
+	case ESTATE::SEARCH: UpdateSearch(); break;
+	default: break;
+	}
+}
+
+// --- ヘルパー: dir_方向に1マス移動。移動できたらtrue ---
+bool Enemy::MoveOneStep()
+{
+	const Point delta[4] = { {0,-1},{0,1},{-1,0},{1,0} };
+	Point d = delta[dir_];
+	Point newPos = { pos_.x + d.x * ENEMY_DRAW_SIZE, pos_.y + d.y * ENEMY_DRAW_SIZE };
+	if (newPos.x < 1 || newPos.x >(STAGE_WIDTH - 2) * ENEMY_DRAW_SIZE ||
+		newPos.y < 1 || newPos.y >(STAGE_HEIGHT - 2) * ENEMY_DRAW_SIZE)
+	{
+		return false;
+	}
+	pos_ = newPos;
+	return true;
+}
+
+// --- 外周を時計回りに巡回 ---
+void Enemy::UpdatePatrol()
+{
+	Player* p = FindGameObject<Player>();
+	if (CanSeePlayer(p))
+	{
+		state_ = ESTATE::CHASE;
+		printfDx("STATE CHANGE->CHASE!\n");
 		return;
 	}
 
+	moveTimer_ -= Time::DeltaTime();
+	if (moveTimer_ <= 0.0f)
+	{
+		if (!MoveOneStep())
+		{
+			TurnRight();
+		}
+		moveTimer_ = ENEMY_MOVE_INTERVAL;
+	}
 }
 
-//void Enemy::UpdateNormal()
-//{
-//
-////static float dir_timer = 3.0f;
-//	static float prog_timer = ENEMY_MOVE_INTERVAL;
-//	float dt = Time::DeltaTime();
-//	//dir_timer = dir_timer - dt;
-//	prog_timer = prog_timer - dt;
-//	//if (dir_timer < 0.0f)
-//	//{
-//	//	//dir_ = (DIR)(GetRand(3));
-//	//	//TurnLeft();
-//	//	TurnBack();
-//	//	dir_timer = 3.0f + dir_timer;
-//	//}
-//
-//	Point newPos = pos_;
-//	if (prog_timer < 0.0f)
-//	{
-//		switch (dir_)
-//		{
-//		case UP:
-//			newPos.y -= ENEMY_DRAW_SIZE;
-//			break;
-//		case DOWN:
-//			newPos.y += ENEMY_DRAW_SIZE;
-//			break;
-//		case LEFT:
-//			newPos.x -= ENEMY_DRAW_SIZE;
-//			break;
-//		case RIGHT:
-//			newPos.x += ENEMY_DRAW_SIZE;
-//			break;
-//		default:
-//			break;
-//		}
-//
-//		if (!(newPos.x < 1 || newPos.x >(STAGE_WIDTH - 2) * ENEMY_DRAW_SIZE
-//			|| newPos.y < 1 || newPos.y >(STAGE_HEIGHT - 2) * ENEMY_DRAW_SIZE))
-//		{
-//			pos_ = newPos;
-//
-//		}
-//		else
-//		{
-//			TurnLeft();
-//		}
-//
-//		Player* p = FindGameObject<Player>();
-//		viewTiles_ = GetViewTiles(VIEW_ANGLE, VIEW_DIST);
-//		if (CanSeePlayer(p))
-//		{
-//			state_ = ESTATE::CHASE;
-//			printfDx("STATE CHANGE->CHASE!\n");
-//		}
-//
-//
-//		prog_timer = ENEMY_MOVE_INTERVAL + prog_timer;
-//	}
-//}
-
+// --- プレイヤーに近づく ---
 void Enemy::UpdateChase()
 {
 	Player* p = FindGameObject<Player>();
 	Point pPos = p->GetPlayerPos();
 
-	Point arrPos = { pPos.x / ENEMY_DRAW_SIZE, pPos.y / ENEMY_DRAW_SIZE };
-	if (arrPos.x == 18 && arrPos.y == 10)
+	// マンハッタン距離がATTACK_DIST以内→ATTACK
+	int mDist = (std::abs(pPos.x - pos_.x) + std::abs(pPos.y - pos_.y)) / ENEMY_DRAW_SIZE;
+	if (mDist <= ATTACK_DIST)
 	{
-		state_ = ESTATE::ESCAPE;
-		printfDx("STATE CHANGE->ESCAPE!\n");
-		chaseTime_ = INIT_CHASE_TIME;
+		state_ = ESTATE::ATTACK;
+		printfDx("STATE CHANGE->ATTACK!\n");
 		return;
 	}
 
+	// プレイヤーの方向を向く
+	int xDist = std::abs(pPos.x - pos_.x);
+	int yDist = std::abs(pPos.y - pos_.y);
+	if (xDist >= yDist)
+		dir_ = (pPos.x > pos_.x) ? DIR::RIGHT : DIR::LEFT;
+	else
+		dir_ = (pPos.y > pos_.y) ? DIR::DOWN : DIR::UP;
 
-	float dt = Time::DeltaTime();
-	if (chaseTime_ < 0)
+	moveTimer_ -= Time::DeltaTime();
+	if (moveTimer_ <= 0.0f)
 	{
-		state_ = ESTATE::NORMAL;
-		chaseTime_ = INIT_CHASE_TIME;
-		printfDx("STATE CHANGE->NORMAL!\n");
-	}
-	else {
-
-
-		int xDist = abs(pPos.x - pos_.x);
-		int yDist = abs(pPos.y - pos_.y);
-		if (xDist > yDist) 
-		{
-			if (pPos.x > pos_.x) {
-				dir_ = DIR::RIGHT;
-			}
-			else {
-				dir_ = DIR::LEFT;
-			}
-		}
-		else if (xDist < yDist)
-		{
-			if (pPos.y > pos_.y) {
-				dir_ = DIR::DOWN;
-			}
-			else {
-				dir_ = DIR::UP;
-			}
-		}
-
-		static float prog_timer = ENEMY_CHASE_INTERVAL;
-		Point newPos = pos_;
-		if (prog_timer < 0.0f)
-		{
-			switch (dir_)
-			{
-			case UP:
-				newPos.y -= ENEMY_DRAW_SIZE;
-				break;
-			case DOWN:
-				newPos.y += ENEMY_DRAW_SIZE;
-				break;
-			case LEFT:
-				newPos.x -= ENEMY_DRAW_SIZE;
-				break;
-			case RIGHT:
-				newPos.x += ENEMY_DRAW_SIZE;
-				break;
-			default:
-				break;
-			}
-
-			if (!(newPos.x < 1 || newPos.x >(STAGE_WIDTH - 2) * ENEMY_DRAW_SIZE
-				|| newPos.y < 1 || newPos.y >(STAGE_HEIGHT - 2) * ENEMY_DRAW_SIZE))
-			{
-				pos_ = newPos;
-
-			}
-			prog_timer = ENEMY_CHASE_INTERVAL + prog_timer;
-		}
-		prog_timer = prog_timer - dt;
-		chaseTime_ = chaseTime_ - dt;
+		MoveOneStep();
+		moveTimer_ = ENEMY_CHASE_INTERVAL;
 	}
 }
 
-void Enemy::UpdateEscape()
+// --- 攻撃 ---
+void Enemy::UpdateAttack()
 {
-	static float prog_timer = ENEMY_MOVE_INTERVAL;
-	float dt = Time::DeltaTime();
-	chaseTime_ = chaseTime_ - dt;
-	
-	if (chaseTime_ < 0)
-	{
-		state_ = ESTATE::NORMAL;
-		chaseTime_ = INIT_CHASE_TIME;
-		printfDx("STATE CHANGE->NORMAL!\n");
-		return;
-	}
 	Player* p = FindGameObject<Player>();
 	Point pPos = p->GetPlayerPos();
 
-	Point dist = { std::abs(pPos.x - pos_.x), std::abs(pPos.y - pos_.y) };
-	if (dist.x > dist.y)
-	{
-		if (pPos.x > pos_.x) {
-			dir_ = DIR::LEFT;
-		}
-		else {
-			dir_ = DIR::RIGHT;
-		}
-	}
-	else if (dist.x < dist.y)
-	{
-		if (pPos.y > pos_.y) {
-			dir_ = DIR::UP;
-		}
-		else {
-			dir_ = DIR::DOWN;
-		}
-	}
+	// プレイヤーを向く
+	int xDist = std::abs(pPos.x - pos_.x);
+	int yDist = std::abs(pPos.y - pos_.y);
+	if (xDist >= yDist)
+		dir_ = (pPos.x > pos_.x) ? DIR::RIGHT : DIR::LEFT;
+	else
+		dir_ = (pPos.y > pos_.y) ? DIR::DOWN : DIR::UP;
 
-	prog_timer = prog_timer - dt;
-	if (prog_timer < 0.0f)
+	// 攻撃距離から逃げられたらSEARCH
+	int mDist = (xDist + yDist) / ENEMY_DRAW_SIZE;
+	if (mDist > ATTACK_DIST)
 	{
-		Point newPos = pos_;
-		switch (dir_)
-		{
-		case UP:
-			newPos.y -= ENEMY_DRAW_SIZE;
-			break;
-		case DOWN:
-			newPos.y += ENEMY_DRAW_SIZE;
-			break;
-		case LEFT:
-			newPos.x -= ENEMY_DRAW_SIZE;
-			break;
-		case RIGHT:
-			newPos.x += ENEMY_DRAW_SIZE;
-			break;
-		default:
-			break;
-		}
-		//???????X?e?[?W??O??o??????????
-		if (!(newPos.x < 1 || newPos.x >(STAGE_WIDTH - 2) * ENEMY_DRAW_SIZE
-			|| newPos.y < 1 || newPos.y >(STAGE_HEIGHT - 2) * ENEMY_DRAW_SIZE))
-		{
-			pos_ = newPos;
-		}
-		prog_timer = ENEMY_MOVE_INTERVAL + prog_timer;
-
+		state_ = ESTATE::SEARCH;
+		stateTimer_ = SEARCH_TIME;
+		printfDx("STATE CHANGE->SEARCH!\n");
 	}
-
 }
 
-void Enemy::DrawFieldOfViewArc_PureDxLib(
-	float fovAngleDeg,
-	int   viewDistanceTiles,
-	int   numSegments
-) const {
-	// 1) ???a??s?N?Z??????
-	float radius = viewDistanceTiles * CHA_SIZE;
-
-	// 2) ???S???W?i?G????S?j
-	float cx = pos_.x + CHA_SIZE * 0.5f;
-	float cy = pos_.y + CHA_SIZE * 0.5f;
-
-	// 3) ???? ?? ?x?[?X?p?x?i?x?????W?A???j
-	float baseDeg = 0.0f;
-	switch (dir_) {
-	case DIR::RIGHT: baseDeg = 0.0f; break;
-	case DIR::UP:    baseDeg = -90.0f; break;
-	case DIR::LEFT:  baseDeg = 180.0f; break;
-	case DIR::DOWN:  baseDeg = 90.0f; break;
+// --- 探索 ---
+void Enemy::UpdateSearch()
+{
+	stateTimer_ -= Time::DeltaTime();
+	if (stateTimer_ < 0)
+	{
+		state_ = ESTATE::PATROL;
+		printfDx("STATE CHANGE->PATROL!\n");
+		return;
 	}
-	float halfRad = (fovAngleDeg * 0.5f) * (3.14159f / 180.0f);
-	float startRad = (baseDeg * (3.14159f / 180.0f)) - halfRad;
-	float endRad = (baseDeg * (3.14159f / 180.0f)) + halfRad;
 
-	// 4) ?h?????
-	SetDrawBlendMode(DX_BLENDMODE_ALPHA, 96);
-	for (int i = 0; i < numSegments; ++i) {
-		float t0 = i / float(numSegments);
-		float t1 = (i + 1) / float(numSegments);
-		float a0 = startRad + (endRad - startRad) * t0;
-		float a1 = startRad + (endRad - startRad) * t1;
-
-		float x0 = cx + cosf(a0) * radius;
-		float y0 = cy + sinf(a0) * radius;
-		float x1 = cx + cosf(a1) * radius;
-		float y1 = cy + sinf(a1) * radius;
-
-		DrawTriangle(
-			int(cx), int(cy),
-			int(x0), int(y0),
-			int(x1), int(y1),
-			GetColor(255, 255, 0),
-			TRUE
-		);
+	Player* p = FindGameObject<Player>();
+	if (CanSeePlayer(p))
+	{
+		state_ = ESTATE::ATTACK;
+		printfDx("STATE CHANGE->ATTACK!\n");
+		return;
 	}
-	SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
 
-	// 5) ??s??
-	const int lineColor = GetColor(255, 255, 0);
-	float prevX = cx + cosf(startRad) * radius;
-	float prevY = cy + sinf(startRad) * radius;
-	for (int i = 1; i <= numSegments; ++i) {
-		float t = i / float(numSegments);
-		float ang = startRad + (endRad - startRad) * t;
-		float nx = cx + cosf(ang) * radius;
-		float ny = cy + sinf(ang) * radius;
-		DrawLine(int(prevX), int(prevY), int(nx), int(ny), lineColor);
-		prevX = nx; prevY = ny;
+	// うろうろ：移動できなかったらランダムに方向転換
+	moveTimer_ -= Time::DeltaTime();
+	
+	if (moveTimer_ <= 0.0f)
+	{
+		MoveOneStep();
+		dir_ = (DIR)(GetRand(3));//壁だろうが、なんだろうが動く時間になったらどっかに動く＝探す
+		moveTimer_ = ENEMY_MOVE_INTERVAL;
 	}
-	// ???[?????S????
-	float xA = cx + cosf(startRad) * radius;
-	float yA = cy + sinf(startRad) * radius;
-	float xB = cx + cosf(endRad) * radius;
-	float yB = cy + sinf(endRad) * radius;
-	DrawLine(int(cx), int(cy), int(xA), int(yA), lineColor);
-	DrawLine(int(cx), int(cy), int(xB), int(yB), lineColor);
 }
 
 /// <summary>
-/// ?w?????p?x????????????A?G????E???^?C????v?Z??????B
-/// </summary>
-/// <param name="angle">????p(?x?P??)?B</param>
-/// <param name="dist">???E???????(?^?C???P??)?B</param>
-/// <returns>???E???^?C?????W??x?N?^?[?B</returns>
 std::vector<Point> Enemy::GetViewTiles(float angle, int dist)
 {
-	std::vector<Point> viewTiles;//???E??^?C????i?[????x?N?^?[
+	std::vector<Point> viewTiles;
 	Point dVec[4] = { {0, -1}, {0, 1}, {-1, 0}, {1, 0} };
 	Point pPos = { pos_.x / ENEMY_DRAW_SIZE, pos_.y / ENEMY_DRAW_SIZE };
+	float rad = DirectX::XMConvertToRadians(angle);
 
-	//float rad = angle * (3.14159f / 180.0f); //?x????W?A??????
-	float rad =  DirectX::XMConvertToRadians(angle);
-
-	for (int dy = -dist; dy <= dist; dy++){
-		for (int dx = -dist; dx <= dist; dx++){
-			if (dx == 0 && dy == 0) continue; //????????O
-			//?????`?F?b?N
-			if (sqrt(dx * dx + dy * dy) > dist) continue; //??????dist??????????O
+	for (int dy = -dist; dy <= dist; dy++) {
+		for (int dx = -dist; dx <= dist; dx++) {
+			if (dx == 0 && dy == 0) continue;
+			if (sqrt(dx * dx + dy * dy) > dist) continue;
 			Point face = dVec[dir_];
-			DirectX::XMVECTOR faceVec = DirectX::XMVectorSet(face.x, face.y, 0.0f, 0.0f);
-			DirectX::XMVECTOR dirVec = DirectX::XMVectorSet(dx, dy, 0.0f, 0.0f);
-			faceVec = DirectX::XMVector2Normalize(faceVec);
-			dirVec = DirectX::XMVector2Normalize(dirVec);
-			//DirectX::XMVector2Dot(faceVec, dirVec);
-			float dotProduct = DirectX::XMVectorGetX(DirectX::XMVector2Dot(faceVec, dirVec));
-			//?p?x?`?F?b?N
-			if (dotProduct < cosf(rad)) continue; //?p?x??rad???????????O
-			//???E??^?C??????
+			DirectX::XMVECTOR faceVec = DirectX::XMVector2Normalize(DirectX::XMVectorSet(face.x, face.y, 0.0f, 0.0f));
+			DirectX::XMVECTOR dirVec  = DirectX::XMVector2Normalize(DirectX::XMVectorSet(dx, dy, 0.0f, 0.0f));
+			float dot = DirectX::XMVectorGetX(DirectX::XMVector2Dot(faceVec, dirVec));
+			if (dot < cosf(rad)) continue;
 			Point viewTile = { pPos.x + dx, pPos.y + dy };
-			//?X?e?[?W??O??o??????????
 			if (viewTile.x < 0 || viewTile.x >= STAGE_WIDTH ||
 				viewTile.y < 0 || viewTile.y >= STAGE_HEIGHT) continue;
-			//?^?C??????	
 			viewTiles.push_back(viewTile);
 		}
 	}
@@ -395,7 +222,6 @@ void Enemy::Draw()
 	DrawRectExtendGraph(pos_.x, pos_.y,pos_.x + ENEMY_DRAW_SIZE, pos_.y + ENEMY_DRAW_SIZE,
 		               iRect[dir_].x, iRect[dir_].y, iRect[dir_].w, iRect[dir_].h, hImage_, TRUE);
 	
-	//???E??`??
 	SetDrawBlendMode(DX_BLENDMODE_ALPHA, 128);
 	for (auto& tile : viewTiles_)
 	{
@@ -404,16 +230,12 @@ void Enemy::Draw()
 			GetColor(0, 255, 0), TRUE);
 	}
 	SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
-	
+
+	animTimer -= Time::DeltaTime();
 	if (animTimer < 0) {
 		frame = (++frame) % 4;
 		animTimer = ANIM_INTERVAL + animTimer;
 	}
-	//animTimer = animTimer - Time::DeltaTime();
-	//if (state_ == ESTATE::CHASE)
-	//{
-	//	printfDx("CHASE!\n");
-	//}
 }
 
 void Enemy::TurnLeft()
@@ -481,22 +303,6 @@ void Enemy::TurnBack()
 
 bool Enemy::CanSeePlayer(Player* p)
 {
-	//dir_?@?p???_?????
-	//?O??5?}?X????E?????A?????????????h??I
-	//VIEW_DIST = 5?????????
-	//Point playerP = p->GetPlayerPos();
-	//playerP = { playerP.x / CHA_SIZE, playerP.y / CHA_SIZE };
-	//Point pPos = { pos_.x / CHA_SIZE, pos_.y / CHA_SIZE };
-	//
-	//Point dVec[4] = { {0, -1}, {0, 1}, {-1, 0}, {1, 0} };
-
-	//for (int i = 1; i <= VIEW_DIST; i++) {
-	//	Point posTmp = { pPos.x + i * dVec[dir_].x , pPos.y + i * dVec[dir_].y
-	//};
-	//	if (playerP.x == posTmp.x && playerP.y == posTmp.y)
-	//		return true;
-	//}
-
 	Point pTile = { p->GetPlayerPos().x / ENEMY_DRAW_SIZE, p->GetPlayerPos().y / ENEMY_DRAW_SIZE };
 	for (auto& tile : viewTiles_)
 	{
